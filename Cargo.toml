@@ -1,0 +1,10 @@
+[package]
+name = "friday_particle"
+version = "0.1.0"
+authors = ["Jonathan Nilsson <lord.jonil@gmail.com>"]
+
+[dependencies]
+cgmath = "*"
+glium = "*"
+lazy_static = "*"
+rand = "*"
