@@ -165,7 +165,7 @@ fn main() {
 
         let mut target = display.draw();
         target.clear_color(0.0, 0.0, 0.2, 1.0);
-        target.draw(&vertex_buffer, glium::index::NoIndices, &program, &glium::uniforms::EmptyUniforms,
+        target.draw(&vertex_buffer, &glium::index::NoIndices, &program, &glium::uniforms::EmptyUniforms,
             &Default::default()).unwrap();
         target.finish().unwrap();
 
