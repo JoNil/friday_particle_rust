@@ -5,6 +5,7 @@ extern crate time;
 
 use cgmath::*;
 use glium::glutin::{Api, GlProfile, GlRequest};
+use glium::program::ProgramCreationError;
 use glium::{Blend, BlendingFunction, LinearBlendingFactor, DisplayBuild, DrawParameters, Program, Surface, VertexBuffer};
 use rand::distributions::{IndependentSample, Range};
 
@@ -21,11 +22,8 @@ struct Particle {
 
 impl Default for Particle {
     fn default() -> Particle {
-
-        let mut rng = rand::weak_rng();
-
         Particle {
-            pos: Vector2 { x: 0.0, y: Range::new(0.0, 5.0).ind_sample(&mut rng) },
+            pos: Vector2 { x: 0.0, y: Range::new(0.0, 5.0).ind_sample(&mut rand::thread_rng()) },
             speed: Vector2 { x: 0.0, y: 0.0 },
             acc: Vector2 { x: 0.0, y: 0.0 },
             size: 0.1,
@@ -35,12 +33,10 @@ impl Default for Particle {
 
 fn simulate_particles(particles: &mut [Particle], dt: f32)
 {
-    let mut rng = rand::weak_rng();
-
     for particle in particles {
         if -1.2 < particle.pos.y && particle.pos.y < -1.0 && -0.05 < particle.pos.x && particle.pos.x < 0.05 {
-            particle.speed.y = Range::new(0.5, 2.0).ind_sample(&mut rng);
-            particle.speed.x = Range::new(-1.5/5.0, 1.5/5.0).ind_sample(&mut rng);
+            particle.speed.y = Range::new(0.5, 2.0).ind_sample(&mut rand::thread_rng());
+            particle.speed.x = Range::new(-1.5/5.0, 1.5/5.0).ind_sample(&mut rand::thread_rng());
             particle.acc.x = 0.0;
             particle.acc.y = 0.0;
         } else {
@@ -136,7 +132,7 @@ fn main() {
         .with_gl(GlRequest::Specific(Api::OpenGl, (3, 3)))
         .build_glium().unwrap();
 
-    let program = Program::from_source(&display,"
+    let program = match Program::from_source(&display,"
         #version 330 core
         
         layout(location = 0) in vec2 pos;
@@ -160,18 +156,30 @@ fn main() {
 
         void main()
         {
-            vec3 color = vec3(191.0/255.0, 0.0, 1.0);
-
             vec2 local = (fragment_tex - 0.5) * 2.0;
+
+            float shade = clamp(dot(local, normalize(vec2(1.0, 1.0))), 0.1, 1.0);
+
+            vec3 color = shade * vec3(191.0/255.0, 0.2, 1.0);
 
             float r = sqrt(local.x*local.x + local.y*local.y);
             r = clamp(r, 0.0, 1.0);
             float alpha = 1.5;
-            alpha*= pow(1.0 - r, 2.0);
+            alpha *= pow(1.0 - r, 2.0);
 
             fragment_color = vec4(color, alpha);
         }
-    ", None).unwrap();
+    ", None) {
+        Ok(prg) => prg,
+        Err(err) => {
+            if let ProgramCreationError::CompilationError(log) = err {
+                println!("{}", log);
+                panic!("Failed to compile shader");
+            } else {
+                panic!("{:?}", err)
+            }
+        }
+    };
 
     let mut particles: Vec<Particle> = vec![Default::default(); PARTICLE_COUNT as usize];
 
