@@ -7,3 +7,4 @@ authors = ["Jonathan Nilsson <lord.jonil@gmail.com>"]
 cgmath = "*"
 glium = "*"
 rand = "*"
+time = "*"

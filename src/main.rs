@@ -1,6 +1,7 @@
 #[macro_use] extern crate glium;
 extern crate cgmath;
 extern crate rand;
+extern crate time;
 
 use cgmath::*;
 use glium::glutin::{Api, GlProfile, GlRequest};
@@ -193,9 +194,15 @@ fn main() {
         .. Default::default()
     };
 
+    let mut old_time = time::precise_time_ns();
+
     loop {
 
-        simulate_particles(&mut particles, 1.0 / 60.0);
+        let new_time = time::precise_time_ns();
+        let dt = (new_time - old_time) as f32 / 1e9;
+        old_time = new_time;
+
+        simulate_particles(&mut particles, dt);
 
         build_vertex_pos_buffer(&particles, &mut vertex_pos);
 
