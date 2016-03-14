@@ -154,11 +154,13 @@ fn main() {
 
         layout(location = 0) out vec4 fragment_color;
 
+        uniform vec2 mouse_pos;
+
         void main()
         {
             vec2 local = (fragment_tex - 0.5) * 2.0;
 
-            float shade = clamp(dot(local, normalize(vec2(1.0, 1.0))), 0.1, 1.0);
+            float shade = clamp(dot(local, normalize(mouse_pos)), 0.1, 1.0);
 
             vec3 color = shade * vec3(191.0/255.0, 0.2, 1.0);
 
@@ -203,6 +205,7 @@ fn main() {
     };
 
     let mut old_time = time::precise_time_ns();
+    let mut mouse_pos = (0, 0);
 
     loop {
 
@@ -222,13 +225,16 @@ fn main() {
             (&vertex_pos_buffer, &vertex_tex_buffer),
             &glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList),
             &program,
-            &glium::uniforms::EmptyUniforms,
+            &uniform! { mouse_pos: (
+                (mouse_pos.0 as f32 / WIDTH as f32) * 2.0 - 1.0,
+                (1.0 - mouse_pos.1 as f32 / HEIGHT as f32) * 2.0 - 1.0) },
             &params).unwrap();
         target.finish().unwrap();
 
         for ev in display.poll_events() {
             match ev {
-                glium::glutin::Event::Closed => return,   // the window has been closed by the user
+                glium::glutin::Event::Closed => return,
+                glium::glutin::Event::MouseMoved(pos) => mouse_pos = pos,
                 _ => ()
             }
         }
