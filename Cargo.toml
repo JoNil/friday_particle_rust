@@ -6,5 +6,4 @@ authors = ["Jonathan Nilsson <lord.jonil@gmail.com>"]
 [dependencies]
 cgmath = "*"
 glium = "*"
-lazy_static = "*"
 rand = "*"

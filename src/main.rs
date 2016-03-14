@@ -1,11 +1,9 @@
 #[macro_use] extern crate glium;
-#[macro_use] extern crate lazy_static;
 extern crate cgmath;
 extern crate rand;
 
 use cgmath::*;
-use glium::VertexBuffer;
-use glium::{DisplayBuild, Surface};
+use glium::{Blend, BlendingFunction, LinearBlendingFactor, DisplayBuild, DrawParameters, Program, Surface, VertexBuffer};
 use rand::distributions::{IndependentSample, Range};
 
 const WIDTH: i32 = 1280;
@@ -57,46 +55,67 @@ fn simulate_particles(particles: &mut [Particle], dt: f32)
 }
 
 #[derive(Copy, Clone, Default)]
-struct Vertex {
-    pos: [f32; 3],
+struct VertexPos {
+    pos: [f32; 2],
+}
+
+#[derive(Copy, Clone, Default)]
+struct VertexTex {
     tex: [f32; 2],
 }
 
-implement_vertex!(Vertex, pos, tex);
+implement_vertex!(VertexPos, pos);
+implement_vertex!(VertexTex, tex);
 
-fn build_vertex_buffer(particles: &[Particle], vertices: &mut [Vertex]) {
+fn build_vertex_pos_buffer(particles: &[Particle], vertices: &mut [VertexPos]) {
 
-    assert!(particles.len() == vertices.len() / 4);
+    assert!(particles.len() == vertices.len() / 6);
 
     for i in 0..particles.len() {
 
-        vertices[i*4 + 0].pos[0] = -particles[i].size / 2.0 + particles[i].pos.x;
-        vertices[i*4 + 0].pos[1] = -particles[i].size / 2.0 + particles[i].pos.y; 
-        vertices[i*4 + 0].pos[2] = 0.0;
+        vertices[i*6 + 0].pos[0] = -particles[i].size / 2.0 + particles[i].pos.x;
+        vertices[i*6 + 0].pos[1] = -particles[i].size / 2.0 + particles[i].pos.y;
 
-        vertices[i*4 + 1].pos[0] = particles[i].size / 2.0 + particles[i].pos.x;
-        vertices[i*4 + 1].pos[1] = -particles[i].size / 2.0 + particles[i].pos.y;
-        vertices[i*4 + 1].pos[2] = 0.0;
+        vertices[i*6 + 1].pos[0] = particles[i].size / 2.0 + particles[i].pos.x;
+        vertices[i*6 + 1].pos[1] = -particles[i].size / 2.0 + particles[i].pos.y;
 
-        vertices[i*4 + 2].pos[0] = particles[i].size / 2.0 + particles[i].pos.x;
-        vertices[i*4 + 2].pos[1] = particles[i].size / 2.0 + particles[i].pos.y;
-        vertices[i*4 + 2].pos[2] = 0.0;
+        vertices[i*6 + 2].pos[0] = particles[i].size / 2.0 + particles[i].pos.x;
+        vertices[i*6 + 2].pos[1] = particles[i].size / 2.0 + particles[i].pos.y;
 
-        vertices[i*4 + 3].pos[0] = -particles[i].size / 2.0 + particles[i].pos.x;
-        vertices[i*4 + 3].pos[1] = particles[i].size / 2.0 + particles[i].pos.y;
-        vertices[i*4 + 3].pos[2] = 0.0;
 
-        vertices[i*4 + 0].tex[0] = 0.0;
-        vertices[i*4 + 0].tex[1] = 0.0;
+        vertices[i*6 + 3].pos[0] = -particles[i].size / 2.0 + particles[i].pos.x;
+        vertices[i*6 + 3].pos[1] = -particles[i].size / 2.0 + particles[i].pos.y;
 
-        vertices[i*4 + 1].tex[0] = 1.0;
-        vertices[i*4 + 1].tex[1] = 0.0;
+        vertices[i*6 + 4].pos[0] = particles[i].size / 2.0 + particles[i].pos.x;
+        vertices[i*6 + 4].pos[1] = particles[i].size / 2.0 + particles[i].pos.y;        
 
-        vertices[i*4 + 2].tex[0] = 1.0;
-        vertices[i*4 + 2].tex[1] = 1.0;
+        vertices[i*6 + 5].pos[0] = -particles[i].size / 2.0 + particles[i].pos.x;
+        vertices[i*6 + 5].pos[1] = particles[i].size / 2.0 + particles[i].pos.y;
+    }
+}
 
-        vertices[i*4 + 3].tex[0] = 0.0;
-        vertices[i*4 + 3].tex[1] = 1.0;
+fn build_vertex_tex_buffer(vertices: &mut [VertexTex]) {
+
+    for i in 0..(vertices.len() / 6) {
+
+        vertices[i*6 + 0].tex[0] = 0.0;
+        vertices[i*6 + 0].tex[1] = 0.0;
+
+        vertices[i*6 + 1].tex[0] = 1.0;
+        vertices[i*6 + 1].tex[1] = 0.0;
+
+        vertices[i*6 + 2].tex[0] = 1.0;
+        vertices[i*6 + 2].tex[1] = 1.0;
+
+
+        vertices[i*6 + 3].tex[0] = 0.0;
+        vertices[i*6 + 3].tex[1] = 0.0;
+
+        vertices[i*6 + 4].tex[0] = 1.0;
+        vertices[i*6 + 4].tex[1] = 1.0;
+
+        vertices[i*6 + 5].tex[0] = 0.0;
+        vertices[i*6 + 5].tex[1] = 1.0;
     }
 }
 
@@ -109,64 +128,78 @@ fn main() {
         .with_dimensions(WIDTH as u32, HEIGHT as u32)
         .build_glium().unwrap();
 
-    let program = program!(&display,
-        130 => {
-            vertex: "
-                #version 130
-                
-                attribute vec3 vertex_pos;
-                attribute vec2 vertex_tex;
+    let program = Program::from_source(&display,"
+        #version 120
+        
+        attribute vec2 pos;
+        attribute vec2 tex;
 
-                varying vec3 pos;
-                varying vec2 tex;
+        varying vec2 fragment_pos;
+        varying vec2 fragment_tex;
 
-                void main() {
-                    pos = vertex_pos;
-                    tex = vertex_tex;
-                    gl_Position = vec4(vertex_pos, 1.0);
-                }
-            ",
+        void main() {
+            fragment_pos = pos;
+            fragment_tex = tex;
+            gl_Position = vec4(pos, 0.0, 1.0);
+        }
+    ", "
+        #version 120
+        
+        varying vec2 fragment_pos;
+        varying vec2 fragment_tex;
 
-            fragment: "
-                #version 130
-                
-                varying vec3 pos;
-                varying vec2 tex;
+        void main()
+        {
+            vec3 color = vec3(191.0/255.0, 0.0, 1.0);
 
-                void main()
-                {
-                    vec3 color = vec3(191.0/255.0, 0.0, 1.0);
+            vec2 local = (fragment_tex - 0.5) * 2.0;
 
-                    vec2 local = (tex - 0.5) * 2.0;
+            float r = sqrt(local.x*local.x + local.y*local.y);
+            r = clamp(r, 0.0, 1.0);
+            float alpha = 1.5;
+            alpha*= pow(1.0 - r, 2.0);
 
-                    float r = sqrt(local.x*local.x + local.y*local.y);
-                    r = clamp(r, 0.0, 1.0);
-                    float alpha = 1.5;
-                    alpha*= pow(1.0 - r, 2.0);
-
-                    gl_FragColor = vec4(color, alpha);
-                }
-            ",
-        },
-    ).unwrap();
+            gl_FragColor = vec4(color, alpha);
+        }
+    ", None).unwrap();
 
     let mut particles: Vec<Particle> = vec![Default::default(); PARTICLE_COUNT as usize];
 
-    let mut vertices: Vec<Vertex> = vec![Default::default(); 4 * PARTICLE_COUNT as usize];
-    let vertex_buffer: VertexBuffer<Vertex> = VertexBuffer::dynamic(&display, &[Default::default(); 4 * PARTICLE_COUNT as usize]).unwrap();
+    let mut vertex_pos: Vec<VertexPos> = vec![Default::default(); 6 * PARTICLE_COUNT as usize];
+    let vertex_pos_buffer: VertexBuffer<VertexPos> = VertexBuffer::dynamic(&display,
+            &[Default::default(); 6 * PARTICLE_COUNT as usize]).unwrap();
+
+    let vertex_tex_buffer: VertexBuffer<VertexTex> = {
+        let mut vertex_tex: Vec<VertexTex> = vec![Default::default(); 6 * PARTICLE_COUNT as usize];
+        build_vertex_tex_buffer(&mut vertex_tex);
+        VertexBuffer::new(&display, &vertex_tex).unwrap()
+    };
+
+    let params = DrawParameters {
+        blend: Blend {
+            color: BlendingFunction::Addition { source: LinearBlendingFactor::SourceAlpha , destination: LinearBlendingFactor::OneMinusSourceAlpha },
+            alpha: BlendingFunction::Addition { source: LinearBlendingFactor::SourceAlpha , destination: LinearBlendingFactor::OneMinusSourceAlpha },
+            .. Default::default()
+        },
+        .. Default::default()
+    };
 
     loop {
 
         simulate_particles(&mut particles, 1.0 / 60.0);
 
-        build_vertex_buffer(&particles, &mut vertices);
+        build_vertex_pos_buffer(&particles, &mut vertex_pos);
 
-        vertex_buffer.write(&vertices);
+        vertex_pos_buffer.write(&vertex_pos);
 
         let mut target = display.draw();
         target.clear_color(0.0, 0.0, 0.2, 1.0);
-        target.draw(&vertex_buffer, &glium::index::NoIndices, &program, &glium::uniforms::EmptyUniforms,
-            &Default::default()).unwrap();
+        target.draw(
+            (&vertex_pos_buffer, &vertex_tex_buffer),
+            &glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList),
+            &program,
+            &glium::uniforms::EmptyUniforms,
+            &params).unwrap();
         target.finish().unwrap();
 
         for ev in display.poll_events() {
