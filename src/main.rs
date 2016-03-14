@@ -20,8 +20,11 @@ struct Particle {
 
 impl Default for Particle {
     fn default() -> Particle {
+
+        let mut rng = rand::weak_rng();
+
         Particle {
-            pos: Vector2 { x: 0.0, y: -0.5 },
+            pos: Vector2 { x: 0.0, y: Range::new(0.0, 5.0).ind_sample(&mut rng) },
             speed: Vector2 { x: 0.0, y: 0.0 },
             acc: Vector2 { x: 0.0, y: 0.0 },
             size: 0.1,
@@ -34,19 +37,20 @@ fn simulate_particles(particles: &mut [Particle], dt: f32)
     let mut rng = rand::weak_rng();
 
     for particle in particles {
-        if -0.55 < particle.pos.y && particle.pos.y < -0.45 && -0.05 < particle.pos.x && particle.pos.x < 0.05 {
-            particle.speed.y = Range::new(0.0, 2.0).ind_sample(&mut rng);
-            particle.speed.x = Range::new(-2.0/3.0, 2.0/3.0).ind_sample(&mut rng);
+        if -1.2 < particle.pos.y && particle.pos.y < -1.0 && -0.05 < particle.pos.x && particle.pos.x < 0.05 {
+            particle.speed.y = Range::new(0.5, 2.0).ind_sample(&mut rng);
+            particle.speed.x = Range::new(-1.5/5.0, 1.5/5.0).ind_sample(&mut rng);
             particle.acc.x = 0.0;
             particle.acc.y = 0.0;
         } else {
-            particle.acc.y = -(particle.pos.y + 0.5) * 2.0;
-            if particle.pos.y < -0.5 {
-                particle.acc.y = -(particle.pos.y + 0.5) * 20.0;
-                if particle.pos.x < -0.05 || 0.05 < particle.pos.x {
-                    particle.acc.x = -particle.pos.x * 20.0;
-                } else {
+            particle.acc.y = -1.1;
+            if particle.pos.y < -1.0 {
+                particle.speed.y = -(particle.pos.y + 1.0) * 20.0;
+                particle.acc.y = 0.0;
+                particle.acc.x = -particle.pos.x * 20.0;
+                if particle.pos.x < -0.02 && 0.02 < particle.pos.x {
                     particle.speed.x = 0.0;
+                    particle.acc.x=0.0;
                 }
             }
         }
