@@ -160,9 +160,11 @@ fn main() {
         {
             vec2 local = (fragment_tex - 0.5) * 2.0;
 
-            float shade = clamp(dot(local, normalize(mouse_pos)), 0.1, 1.0);
+            float shade = clamp(dot(local, normalize(mouse_pos)), 0.2, 1.0);
+            float shade2 = clamp(dot(local, normalize(vec2(mouse_pos.y, -mouse_pos.x))), 0.2, 1.0);
 
-            vec3 color = shade * vec3(191.0/255.0, 0.2, 1.0);
+            vec3 color = shade * vec3(191.0/255.0, 0.2, 1.0) + 
+                         shade2 * vec3(0.9, 0.2, 0.1);
 
             float r = sqrt(local.x*local.x + local.y*local.y);
             r = clamp(r, 0.0, 1.0);
@@ -209,6 +211,14 @@ fn main() {
 
     loop {
 
+        for ev in display.poll_events() {
+            match ev {
+                glium::glutin::Event::Closed => return,
+                glium::glutin::Event::MouseMoved(pos) => mouse_pos = pos,
+                _ => ()
+            }
+        }
+
         let new_time = time::precise_time_ns();
         let dt = (new_time - old_time) as f32 / 1e9;
         old_time = new_time;
@@ -230,14 +240,6 @@ fn main() {
                 (1.0 - mouse_pos.1 as f32 / HEIGHT as f32) * 2.0 - 1.0) },
             &params).unwrap();
         target.finish().unwrap();
-
-        for ev in display.poll_events() {
-            match ev {
-                glium::glutin::Event::Closed => return,
-                glium::glutin::Event::MouseMoved(pos) => mouse_pos = pos,
-                _ => ()
-            }
-        }
     }
 
 }
