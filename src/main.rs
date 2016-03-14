@@ -3,6 +3,7 @@ extern crate cgmath;
 extern crate rand;
 
 use cgmath::*;
+use glium::glutin::{Api, GlProfile, GlRequest};
 use glium::{Blend, BlendingFunction, LinearBlendingFactor, DisplayBuild, DrawParameters, Program, Surface, VertexBuffer};
 use rand::distributions::{IndependentSample, Range};
 
@@ -126,16 +127,18 @@ fn main() {
     let display = glium::glutin::WindowBuilder::new()
         .with_title("Friday Particle".into())
         .with_dimensions(WIDTH as u32, HEIGHT as u32)
+        .with_gl_profile(GlProfile::Core)
+        .with_gl(GlRequest::Specific(Api::OpenGl, (3, 3)))
         .build_glium().unwrap();
 
     let program = Program::from_source(&display,"
-        #version 120
+        #version 330 core
         
-        attribute vec2 pos;
-        attribute vec2 tex;
+        layout(location = 0) in vec2 pos;
+        layout(location = 1) in vec2 tex;
 
-        varying vec2 fragment_pos;
-        varying vec2 fragment_tex;
+        out vec2 fragment_pos;
+        out vec2 fragment_tex;
 
         void main() {
             fragment_pos = pos;
@@ -143,10 +146,12 @@ fn main() {
             gl_Position = vec4(pos, 0.0, 1.0);
         }
     ", "
-        #version 120
+        #version 330 core
         
-        varying vec2 fragment_pos;
-        varying vec2 fragment_tex;
+        in vec2 fragment_pos;
+        in vec2 fragment_tex;
+
+        layout(location = 0) out vec4 fragment_color;
 
         void main()
         {
@@ -159,7 +164,7 @@ fn main() {
             float alpha = 1.5;
             alpha*= pow(1.0 - r, 2.0);
 
-            gl_FragColor = vec4(color, alpha);
+            fragment_color = vec4(color, alpha);
         }
     ", None).unwrap();
 
