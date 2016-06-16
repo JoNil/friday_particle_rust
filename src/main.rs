@@ -129,15 +129,15 @@ fn main() {
         .with_title("Friday Particle".to_owned())
         .with_dimensions(WIDTH as u32, HEIGHT as u32)
         .with_gl_profile(GlProfile::Core)
-        .with_gl(GlRequest::Specific(Api::OpenGl, (3, 3)))
+        .with_gl(GlRequest::Specific(Api::OpenGl, (3, 0)))
         .build_glium()
         .unwrap();
 
     let program = match Program::from_source(&display,"
-        #version 330 core
+        #version 130
         
-        layout(location = 0) in vec2 pos;
-        layout(location = 1) in vec2 tex;
+        in vec2 pos;
+        in vec2 tex;
 
         out vec2 fragment_pos;
         out vec2 fragment_tex;
@@ -148,12 +148,12 @@ fn main() {
             gl_Position = vec4(pos, 0.0, 1.0);
         }
     ", "
-        #version 330 core
+        #version 130
         
         in vec2 fragment_pos;
         in vec2 fragment_tex;
 
-        layout(location = 0) out vec4 fragment_color;
+        out vec4 fragment_color;
 
         uniform vec2 mouse_pos;
 
