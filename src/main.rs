@@ -6,7 +6,7 @@ extern crate time;
 use cgmath::*;
 use glium::glutin::{Api, GlProfile, GlRequest};
 use glium::program::ProgramCreationError;
-use glium::{Blend, BlendingFunction, LinearBlendingFactor, DisplayBuild, DrawParameters, Program, Surface, VertexBuffer};
+use glium::{DisplayBuild, Blend, BlendingFunction, LinearBlendingFactor, DrawParameters, Program, Surface, VertexBuffer};
 use rand::distributions::{IndependentSample, Range};
 
 const WIDTH: i32 = 1280;
@@ -126,11 +126,12 @@ const PARTICLE_COUNT: i32 = 1000;
 fn main() {
 
     let display = glium::glutin::WindowBuilder::new()
-        .with_title("Friday Particle".into())
+        .with_title("Friday Particle".to_owned())
         .with_dimensions(WIDTH as u32, HEIGHT as u32)
         .with_gl_profile(GlProfile::Core)
         .with_gl(GlRequest::Specific(Api::OpenGl, (3, 3)))
-        .build_glium().unwrap();
+        .build_glium()
+        .unwrap();
 
     let program = match Program::from_source(&display,"
         #version 330 core
@@ -214,7 +215,7 @@ fn main() {
         for ev in display.poll_events() {
             match ev {
                 glium::glutin::Event::Closed => return,
-                glium::glutin::Event::MouseMoved(pos) => mouse_pos = pos,
+                glium::glutin::Event::MouseMoved(x, y) => mouse_pos = (x, y),
                 _ => ()
             }
         }
