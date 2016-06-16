@@ -128,7 +128,7 @@ fn main() {
     let display = glium::glutin::WindowBuilder::new()
         .with_title("Friday Particle".to_owned())
         .with_dimensions(WIDTH as u32, HEIGHT as u32)
-        .with_gl_profile(GlProfile::Core)
+        .with_gl_profile(GlProfile::Compatibility)
         .with_gl(GlRequest::Specific(Api::OpenGl, (3, 0)))
         .build_glium()
         .unwrap();
